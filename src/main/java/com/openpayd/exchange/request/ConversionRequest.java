@@ -1,5 +1,6 @@
 package com.openpayd.exchange.request;
 
+import com.openpayd.exchange.enums.CurrencyCode;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -7,6 +8,6 @@ import java.math.BigDecimal;
 @Data
 public class ConversionRequest {
     private BigDecimal amount;
-    private String sourceCurrency; //curr enum
-    private String targetCurrency;
+    private CurrencyCode sourceCurrency;
+    private CurrencyCode targetCurrency;
 }

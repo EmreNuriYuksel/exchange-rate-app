@@ -2,7 +2,7 @@ package com.openpayd.exchange.adapter.impl;
 
 import com.openpayd.exchange.adapter.ExchangeRateApiAdapter;
 import com.openpayd.exchange.config.CurrencyLayerApiProperties;
-import com.openpayd.exchange.response.CurrencyLayerApiResponse;
+import com.openpayd.exchange.adapter.response.ExchangeRateApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -19,7 +19,7 @@ public class CurrencyLayerApiAdapterImpl implements ExchangeRateApiAdapter {
     @Override
     public BigDecimal getExchangeRate(String sourceCurrency, String targetCurrency) {
 
-        CurrencyLayerApiResponse response = webClient.get()
+        ExchangeRateApiResponse response = webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("access_key", apiProperties.getAccessKey())
                         .queryParam("currencies", targetCurrency)
@@ -27,7 +27,7 @@ public class CurrencyLayerApiAdapterImpl implements ExchangeRateApiAdapter {
                         .queryParam("format", apiProperties.getFormat())
                         .build())
                 .retrieve()
-                .bodyToMono(CurrencyLayerApiResponse.class)
+                .bodyToMono(ExchangeRateApiResponse.class)
                 .block();
 
         return response.getQuotes().get(sourceCurrency + targetCurrency);

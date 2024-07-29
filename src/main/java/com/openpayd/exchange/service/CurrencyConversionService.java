@@ -1,10 +1,13 @@
 package com.openpayd.exchange.service;
 
 import com.openpayd.exchange.adapter.ExchangeRateApiAdapter;
-import com.openpayd.exchange.entity.CurrencyConversion;
-import com.openpayd.exchange.repository.CurrencyConversionRepository;
+import com.openpayd.exchange.dto.ConversionResponseDto;
+import com.openpayd.exchange.dto.CurrencyConversionHistoryDto;
+import com.openpayd.exchange.entity.CurrencyConversionHistory;
+import com.openpayd.exchange.enums.CurrencyCode;
+import com.openpayd.exchange.mapper.CurrencyConversionHistoryMapper;
+import com.openpayd.exchange.repository.CurrencyConversionHistoryRepository;
 import com.openpayd.exchange.request.ConversionRequest;
-import com.openpayd.exchange.response.ConversionResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,45 +26,57 @@ public class CurrencyConversionService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
-    private final CurrencyConversionRepository repository;
+    private final CurrencyConversionHistoryRepository repository;
     private final ExchangeRateApiAdapter exchangeRateApiAdapter;
+    private final CurrencyConversionHistoryMapper mapper;
 
     //@Cacheable
-    public BigDecimal getExchangeRate(String sourceCurrency, String targetCurrency) {
-        return exchangeRateApiAdapter.getExchangeRate(sourceCurrency, targetCurrency);
+    public BigDecimal getExchangeRate(CurrencyCode sourceCurrency, CurrencyCode targetCurrency) {
+        return exchangeRateApiAdapter.getExchangeRate(sourceCurrency.name(), targetCurrency.name());
     }
 
-    public ConversionResponse convertCurrency(ConversionRequest request) {
+    public ConversionResponseDto convertCurrency(ConversionRequest request) {
+
         BigDecimal actualRate = getExchangeRate(request.getSourceCurrency(), request.getTargetCurrency());
-
         BigDecimal convertedAmount = request.getAmount().multiply(actualRate);
-
         UUID transactionId = UUID.randomUUID();
 
-        CurrencyConversion conversion = new CurrencyConversion(); //builder
-        conversion.setSourceCurrency(request.getSourceCurrency());
-        conversion.setTargetCurrency(request.getTargetCurrency());
-        conversion.setAmount(request.getAmount());
-        conversion.setConvertedAmount(convertedAmount);
-        conversion.setTransactionId(transactionId);
-        conversion.setTransactionDate(Instant.now());
+        persistCurrencyConversion(request, convertedAmount, transactionId);
 
-        repository.save(conversion);
-
-        ConversionResponse response = new ConversionResponse(); //builder
-        response.setConvertedAmount(convertedAmount);
-        response.setTransactionId(transactionId);
-        return response;
+        return ConversionResponseDto.builder()
+                .convertedAmount(convertedAmount)
+                .transactionId(transactionId)
+                .build();
     }
 
-    public List<CurrencyConversion> getConversionHistory(UUID transactionId, String startDate, String endDate) {
+    public List<CurrencyConversionHistoryDto> getConversionHistory(final UUID transactionId,
+                                                                   final String startDate,
+                                                                   final String endDate) {
 
+        final List<CurrencyConversionHistory> currencyConversionHistoryList;
         if (Objects.nonNull(transactionId)) {
-            return repository.findByTransactionId(transactionId);
+            currencyConversionHistoryList = repository.findByTransactionId(transactionId);
         }
         else {
-            return repository.findByTransactionDateBetween(getInstant(startDate), getInstant(endDate));
+            currencyConversionHistoryList = repository.findByTransactionDateBetween(getInstant(startDate), getInstant(endDate));
         }
+        return mapper.toDtoList(currencyConversionHistoryList);
+    }
+
+    private void persistCurrencyConversion(final ConversionRequest request,
+                                           final BigDecimal convertedAmount,
+                                           final UUID transactionId) {
+
+        final CurrencyConversionHistory currencyConversionHistory = CurrencyConversionHistory.builder()
+                .sourceCurrency(request.getSourceCurrency())
+                .targetCurrency(request.getTargetCurrency())
+                .amount(request.getAmount())
+                .convertedAmount(convertedAmount)
+                .transactionId(transactionId)
+                .transactionDate(Instant.now())
+                .build();
+
+        repository.save(currencyConversionHistory);
     }
 
     private static Instant getInstant(String date) {
