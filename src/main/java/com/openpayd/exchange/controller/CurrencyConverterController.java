@@ -1,28 +1,30 @@
 package com.openpayd.exchange.controller;
 
-import com.openpayd.exchange.dto.ConversionRequest;
-import com.openpayd.exchange.dto.ConversionResponse;
-import com.openpayd.exchange.dto.ExchangeRateResponse;
 import com.openpayd.exchange.entity.CurrencyConversion;
+import com.openpayd.exchange.request.ConversionRequest;
+import com.openpayd.exchange.response.ConversionResponse;
 import com.openpayd.exchange.service.CurrencyConversionService;
-import com.openpayd.exchange.service.ExchangeRateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 public class CurrencyConverterController {
 
-    private final ExchangeRateService exchangeRateService;
     private final CurrencyConversionService currencyConversionService;
 
     @GetMapping("/exchange-rate")
-    public ExchangeRateResponse getExchangeRate(@RequestParam String sourceCurrency, @RequestParam String targetCurrency) {
-        return exchangeRateService.getExchangeRate(sourceCurrency, targetCurrency);
+    public BigDecimal getExchangeRate(@RequestParam String sourceCurrency, @RequestParam String targetCurrency) {
+        return currencyConversionService.getExchangeRate(sourceCurrency, targetCurrency);
     }
 
     @PostMapping("/convert")
@@ -31,9 +33,10 @@ public class CurrencyConverterController {
     }
 
     @GetMapping("/history")
-    public List<CurrencyConversion> getConversionHistory(@RequestParam(required = false) String transactionId,
-                                                         @RequestParam(required = false) LocalDateTime startDate,
-                                                         @RequestParam(required = false) LocalDateTime endDate) {
+    public List<CurrencyConversion> getConversionHistory(@RequestParam(required = false) final UUID transactionId,
+                                                         @RequestParam(required = false) final String startDate,
+                                                         @RequestParam(required = false) final String endDate) {
+
         return currencyConversionService.getConversionHistory(transactionId, startDate, endDate);
     }
 }

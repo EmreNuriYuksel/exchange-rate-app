@@ -1,15 +1,16 @@
-package com.openpayd.exchange.dto;
+package com.openpayd.exchange.response;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
-public class ExchangeRateResponse {
+public class CurrencyLayerApiResponse {
     private boolean success;
     private String terms;
     private String privacy;
     private long timestamp;
     private String source;
-    private Map<String, Double> quotes;
+    private Map<String, BigDecimal> quotes;
 }
