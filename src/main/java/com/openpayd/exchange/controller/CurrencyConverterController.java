@@ -9,6 +9,7 @@ import com.openpayd.exchange.request.ConversionRequest;
 import com.openpayd.exchange.response.ConversionResponse;
 import com.openpayd.exchange.response.CurrencyConversionHistoryResponse;
 import com.openpayd.exchange.service.CurrencyConversionService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,13 +27,15 @@ public class CurrencyConverterController {
     private final ConversionResponseMapper conversionResponseMapper;
     private final CurrencyConversionHistoryMapper conversionHistoryMapper;
 
-    @GetMapping("/exchange-rate")
+    @Operation
+    @GetMapping("/rate")
     public ResponseEntity<BigDecimal> getExchangeRate(@RequestParam final CurrencyCode sourceCurrency,
                                                       @RequestParam final CurrencyCode targetCurrency) {
 
         return ResponseEntity.ok(currencyConversionService.getExchangeRate(sourceCurrency, targetCurrency));
     }
 
+    @Operation
     @PostMapping("/convert")
     public ResponseEntity<ConversionResponse> convertCurrency(@RequestBody final ConversionRequest request) {
 
@@ -41,6 +44,7 @@ public class CurrencyConverterController {
         return ResponseEntity.ok(conversionResponseMapper.toResponse(conversionResponseDto));
     }
 
+    @Operation
     @GetMapping("/history")
     public ResponseEntity<List<CurrencyConversionHistoryResponse>> getConversionHistory(@RequestParam(required = false)
                                                                             final UUID transactionId,
