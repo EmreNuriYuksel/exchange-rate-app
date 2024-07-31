@@ -9,7 +9,10 @@ import com.openpayd.exchange.mapper.CurrencyConversionHistoryMapper;
 import com.openpayd.exchange.repository.CurrencyConversionHistoryRepository;
 import com.openpayd.exchange.request.ConversionRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -22,6 +25,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = {"exchangeRates"})
 public class CurrencyConversionService {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
@@ -30,14 +34,18 @@ public class CurrencyConversionService {
     private final ExchangeRateApiAdapter exchangeRateApiAdapter;
     private final CurrencyConversionHistoryMapper mapper;
 
-    //@Cacheable
+    @Cacheable(cacheNames = "exchangeRates",
+            key = "#sourceCurrency.name() + '-' + #targetCurrency.name()",
+            unless = "#result == null")
     public BigDecimal getExchangeRate(CurrencyCode sourceCurrency, CurrencyCode targetCurrency) {
         return exchangeRateApiAdapter.getExchangeRate(sourceCurrency.name(), targetCurrency.name());
     }
 
+    @Transactional
     public ConversionResponseDto convertCurrency(ConversionRequest request) {
 
         BigDecimal actualRate = getExchangeRate(request.getSourceCurrency(), request.getTargetCurrency());
+
         BigDecimal convertedAmount = request.getAmount().multiply(actualRate);
         UUID transactionId = UUID.randomUUID();
 
@@ -58,7 +66,8 @@ public class CurrencyConversionService {
             currencyConversionHistoryList = repository.findByTransactionId(transactionId);
         }
         else {
-            currencyConversionHistoryList = repository.findByTransactionDateBetween(getInstant(startDate), getInstant(endDate));
+            currencyConversionHistoryList =
+                    repository.findByTransactionDateBetween(getInstant(startDate), getInstant(endDate));
         }
         return mapper.toDtoList(currencyConversionHistoryList);
     }

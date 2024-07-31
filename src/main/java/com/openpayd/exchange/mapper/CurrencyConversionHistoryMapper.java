@@ -13,6 +13,5 @@ public interface CurrencyConversionHistoryMapper {
 
     List<CurrencyConversionHistoryDto> toDtoList(List<CurrencyConversionHistory> currencyConversionHistoryList);
 
-    List<CurrencyConversionHistoryResponse> toResponseList(
-            List<CurrencyConversionHistoryDto> currencyConversionHistoryDtoList);
+    List<CurrencyConversionHistoryResponse> toResponseList(List<CurrencyConversionHistoryDto> conversionHistoryDtoList);
 }
